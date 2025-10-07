@@ -1,58 +1,259 @@
-# Distributed Data Pipelines with Scala and Apache Spark
+# Scala Spark Distributed Data Pipeline
 
-![Scala](https://img.shields.io/badge/Scala-DC322F?style=for-the-badge&logo=scala&logoColor=white) ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apache-spark&logoColor=white)
+![Scala](https://img.shields.io/badge/Scala-DC322F?style=for-the-badge&logo=scala&logoColor=white) ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apache-spark&logoColor=white) ![Big Data](https://img.shields.io/badge/Big_Data-FF6F00?style=for-the-badge)
 
 ---
 
-## 🇧🇷 Pipelines de Dados Distribuídos com Scala e Apache Spark
+## 🇧🇷 Pipeline de Dados Distribuído com Scala e Spark
 
-Este repositório apresenta a construção de pipelines de dados robustos e escaláveis para processamento em lote e streaming, utilizando **Scala** e **Apache Spark**. O projeto demonstra as melhores práticas para engenharia de dados em ambientes distribuídos, desde a ingestão até a disponibilização dos dados para análise.
+Pipeline ETL de **nível empresarial** construído com **Scala** e **Apache Spark** para processamento distribuído de grandes volumes de dados. Demonstra padrões modernos de engenharia de dados, incluindo processamento em batch, otimizações de performance e integração com data lakes.
 
 ### 🎯 Objetivo
 
-O objetivo é fornecer um exemplo completo de um pipeline de dados de ponta a ponta, cobrindo as etapas de extração, transformação e carga (ETL) de grandes volumes de dados. O repositório é um guia prático para engenheiros de dados que desejam construir sistemas de processamento de dados de alta performance com Spark e Scala.
+Fornecer uma arquitetura completa e escalável para pipelines de dados que processam **terabytes de dados** com alta performance, demonstrando as melhores práticas de Spark em produção.
 
-### 📂 Conteúdo do Repositório
+### 🌟 Por que Scala + Spark?
 
-*   **/src/main/scala**: Código-fonte em Scala.
-    *   `pipeline`: Lógica para o pipeline de processamento em lote (batch).
-    *   `streaming`: Implementação de processamento de dados em tempo real com Spark Streaming ou Structured Streaming.
-    *   `ml`: Exemplos de uso do Spark MLlib para aplicar modelos de machine learning em escala.
-*   **/data**: Datasets de exemplo para o processamento.
-*   **/tests**: Testes unitários e de integração para o pipeline.
-*   `build.sbt`: Arquivo de build do SBT com as dependências do projeto.
+| Característica | Scala/Spark | Python/Spark | Java/Spark |
+|----------------|-------------|--------------|------------|
+| **Performance** | Excelente (nativo) | Boa (overhead) | Excelente |
+| **Type Safety** | ✅ Forte | ❌ Fraca | ✅ Forte |
+| **Expressividade** | ✅ Alta | ✅ Alta | ❌ Média |
+| **Ecosystem** | Spark nativo | Pandas, NumPy | Enterprise |
+| **Learning Curve** | Médio-Alto | Baixo | Médio |
 
-### 🛠️ Funcionalidades
+### 📊 Casos de Uso
 
-*   **Processamento em Lote (Batch)**: Jobs Spark para processar grandes datasets de forma eficiente.
-*   **Processamento de Streaming**: Consumo e processamento de dados de fontes de streaming como Apache Kafka.
-*   **Integração com Data Lakes**: Leitura e escrita de dados em formatos otimizados (Parquet, ORC) em data lakes como HDFS ou Amazon S3.
-*   **Machine Learning em Escala**: Treinamento e aplicação de modelos de machine learning em dados distribuídos com Spark MLlib.
+1. **E-commerce**: Processar 100M+ eventos de clickstream diariamente
+2. **Fintech**: Agregação de transações para detecção de fraude
+3. **Telecom**: Análise de CDRs (Call Detail Records) em escala
+4. **IoT**: Processamento de telemetria de milhões de dispositivos
+5. **Marketing**: ETL de dados de múltiplas fontes para data warehouse
+
+### 🏗️ Arquitetura
+
+```
+┌─────────────┐
+│ Data Sources│ (S3, HDFS, Kafka, JDBC)
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────────────┐
+│   Spark Cluster (YARN/K8s)       │
+│  ┌────────┐  ┌────────┐  ┌────┐ │
+│  │ Driver │→ │Executor│→ │... │ │
+│  └────────┘  └────────┘  └────┘ │
+│                                  │
+│  - Extract (read)                │
+│  - Transform (map/filter/agg)    │
+│  - Load (write)                  │
+└──────────────┬───────────────────┘
+               │
+               ▼
+       ┌───────────────┐
+       │ Data Lake/DW  │ (Parquet, Delta, Iceberg)
+       └───────────────┘
+```
+
+### 💻 Código Principal
+
+```scala
+package pipeline
+
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+
+object DataPipeline {
+  
+  def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder()
+      .appName("Distributed Data Pipeline")
+      .config("spark.sql.adaptive.enabled", "true")
+      .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
+      .getOrCreate()
+    
+    import spark.implicits._
+    
+    // Extract
+    val rawData = extractData(spark, "s3a://bucket/raw-data/")
+    
+    // Transform
+    val transformedData = transformData(rawData)
+    
+    // Load
+    loadData(transformedData, "s3a://bucket/processed-data/")
+    
+    spark.stop()
+  }
+  
+  def extractData(spark: SparkSession, path: String): DataFrame = {
+    spark.read
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .parquet(path)
+  }
+  
+  def transformData(df: DataFrame): DataFrame = {
+    df.filter($"amount" > 0)
+      .withColumn("year", year($"date"))
+      .withColumn("month", month($"date"))
+      .groupBy("year", "month", "category")
+      .agg(
+        sum("amount").as("total_amount"),
+        count("*").as("transaction_count"),
+        avg("amount").as("avg_amount")
+      )
+      .orderBy("year", "month")
+  }
+  
+  def loadData(df: DataFrame, path: String): Unit = {
+    df.write
+      .mode("overwrite")
+      .partitionBy("year", "month")
+      .parquet(path)
+  }
+}
+```
+
+### 🚀 Instalação e Execução
+
+```bash
+# Build com sbt
+sbt clean compile package
+
+# Executar localmente
+spark-submit \
+  --class pipeline.DataPipeline \
+  --master local[*] \
+  target/scala-2.12/data-pipeline_2.12-1.0.jar
+
+# Executar em cluster YARN
+spark-submit \
+  --class pipeline.DataPipeline \
+  --master yarn \
+  --deploy-mode cluster \
+  --num-executors 10 \
+  --executor-memory 4G \
+  --executor-cores 2 \
+  target/scala-2.12/data-pipeline_2.12-1.0.jar
+```
+
+### 📈 Otimizações de Performance
+
+```scala
+// 1. Broadcast Join para tabelas pequenas
+val largeDf = spark.read.parquet("large_table")
+val smallDf = spark.read.parquet("small_table")
+val result = largeDf.join(broadcast(smallDf), "key")
+
+// 2. Reparticionamento estratégico
+val optimized = df.repartition(200, $"partition_key")
+
+// 3. Cache de DataFrames intermediários
+val cachedDf = df.filter($"active" === true).cache()
+
+// 4. Predicate Pushdown
+val filtered = spark.read
+  .parquet("data")
+  .filter($"date" >= "2025-01-01")  // Filtro antes de ler
+
+// 5. Column Pruning
+val selected = df.select("id", "name", "amount")  // Apenas colunas necessárias
+```
+
+### 🎓 Conceitos Avançados
+
+#### Transformações Lazy vs Actions
+
+```scala
+// Lazy (não executa)
+val transformed = df.filter($"amount" > 100).select("id", "amount")
+
+// Action (executa todo o pipeline)
+transformed.count()  // Trigger
+transformed.show()   // Trigger
+transformed.write.parquet("output")  // Trigger
+```
+
+#### Particionamento Eficiente
+
+```scala
+// Particionar por data para queries temporais
+df.write
+  .partitionBy("year", "month", "day")
+  .parquet("output")
+
+// Query otimizada
+spark.read.parquet("output")
+  .filter($"year" === 2025 && $"month" === 10)  // Lê apenas partições relevantes
+```
+
+### 🧪 Testes
+
+```scala
+import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.sql.SparkSession
+
+class DataPipelineTest extends AnyFunSuite {
+  
+  test("transformData should aggregate correctly") {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .getOrCreate()
+    
+    import spark.implicits._
+    
+    val input = Seq(
+      ("2025-01-01", "A", 100.0),
+      ("2025-01-01", "A", 200.0),
+      ("2025-01-02", "B", 150.0)
+    ).toDF("date", "category", "amount")
+    
+    val result = DataPipeline.transformData(input)
+    
+    assert(result.count() == 2)
+    assert(result.filter($"category" === "A").select("total_amount").first().getDouble(0) == 300.0)
+  }
+}
+```
+
+### 📊 Monitoramento
+
+```scala
+// Métricas customizadas
+val metrics = df.agg(
+  count("*").as("total_records"),
+  sum("amount").as("total_amount"),
+  avg("amount").as("avg_amount"),
+  min("date").as("min_date"),
+  max("date").as("max_date")
+).collect()(0)
+
+println(s"Processed ${metrics.getLong(0)} records")
+println(s"Total amount: ${metrics.getDouble(1)}")
+```
+
+### 🔗 Recursos
+
+- [Spark Scala API](https://spark.apache.org/docs/latest/api/scala/)
+- [Scala Documentation](https://docs.scala-lang.org/)
+- [High Performance Spark (Book)](https://www.oreilly.com/library/view/high-performance-spark/9781491943199/)
 
 ---
 
-## 🇬🇧 Distributed Data Pipelines with Scala and Apache Spark
+## 🇬🇧 Scala Spark Distributed Data Pipeline
 
-This repository showcases the construction of robust and scalable data pipelines for batch and stream processing, using **Scala** and **Apache Spark**. The project demonstrates best practices for data engineering in distributed environments, from ingestion to making data available for analysis.
+Enterprise-grade ETL pipeline built with **Scala** and **Apache Spark** for distributed processing of large data volumes.
 
-### 🎯 Objective
+### 🚀 Quick Start
 
-The goal is to provide a complete example of an end-to-end data pipeline, covering the extraction, transformation, and loading (ETL) of large volumes of data. The repository is a practical guide for data engineers who want to build high-performance data processing systems with Spark and Scala.
+```bash
+sbt clean compile package
+spark-submit --class pipeline.DataPipeline --master local[*] target/scala-2.12/data-pipeline_2.12-1.0.jar
+```
 
-### 📂 Repository Content
+---
 
-*   **/src/main/scala**: Scala source code.
-    *   `pipeline`: Logic for the batch processing pipeline.
-    *   `streaming`: Implementation of real-time data processing with Spark Streaming or Structured Streaming.
-    *   `ml`: Examples of using Spark MLlib to apply machine learning models at scale.
-*   **/data**: Example datasets for processing.
-*   **/tests**: Unit and integration tests for the pipeline.
-*   `build.sbt`: SBT build file with project dependencies.
-
-### 🛠️ Features
-
-*   **Batch Processing**: Spark jobs to efficiently process large datasets.
-*   **Stream Processing**: Consumption and processing of data from streaming sources like Apache Kafka.
-*   **Data Lake Integration**: Reading and writing data in optimized formats (Parquet, ORC) in data lakes such as HDFS or Amazon S3.
-*   **Machine Learning at Scale**: Training and applying machine learning models on distributed data with Spark MLlib.
-
+**Author:** Gabriel Demetrios Lafis  
+**License:** MIT
