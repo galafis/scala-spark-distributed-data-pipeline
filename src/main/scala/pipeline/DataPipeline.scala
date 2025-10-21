@@ -8,7 +8,6 @@ package pipeline
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
 
 object DataPipeline {
   

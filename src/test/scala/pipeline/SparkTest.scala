@@ -10,11 +10,8 @@ import org.scalatest.matchers.should.Matchers
  */
 trait SparkTest extends AnyFunSuite with BeforeAndAfterAll with Matchers {
 
-  @transient var spark: SparkSession = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    spark = SparkSession
+  protected lazy val spark: SparkSession = {
+    SparkSession
       .builder()
       .appName("Test Spark Session")
       .master("local[2]")
@@ -22,7 +19,10 @@ trait SparkTest extends AnyFunSuite with BeforeAndAfterAll with Matchers {
       .config("spark.sql.shuffle.partitions", "2")
       .config("spark.sql.warehouse.dir", "target/spark-warehouse")
       .getOrCreate()
+  }
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     spark.sparkContext.setLogLevel("ERROR")
   }
 
