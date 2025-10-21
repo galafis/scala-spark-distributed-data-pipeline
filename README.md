@@ -1,5 +1,7 @@
 # Scala Spark Distributed Data Pipeline
 
+[![Scala CI](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Scala](https://img.shields.io/badge/Scala-DC322F?style=for-the-badge&logo=scala&logoColor=white) ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apache-spark&logoColor=white) ![Big Data](https://img.shields.io/badge/Big_Data-FF6F00?style=for-the-badge)
 
 ---
@@ -118,15 +120,36 @@ object DataPipeline {
 
 ### 🚀 Instalação e Execução
 
+#### Pré-requisitos
+
+- Java JDK 11 ou superior
+- SBT 1.9.x
+- Apache Spark 3.5.0 (opcional, para cluster)
+
+#### Instalação
+
 ```bash
+# Clone o repositório
+git clone https://github.com/galafis/scala-spark-distributed-data-pipeline.git
+cd scala-spark-distributed-data-pipeline
+
 # Build com sbt
 sbt clean compile package
 
+# Criar JAR com todas as dependências (assembly)
+sbt assembly
+```
+
+#### Execução
+
+```bash
 # Executar localmente
 spark-submit \
   --class pipeline.DataPipeline \
   --master local[*] \
-  target/scala-2.12/data-pipeline_2.12-1.0.jar
+  target/scala-2.12/scala-spark-distributed-data-pipeline_2.12-1.0.0.jar \
+  input_data.csv \
+  output_results/
 
 # Executar em cluster YARN
 spark-submit \
@@ -136,7 +159,48 @@ spark-submit \
   --num-executors 10 \
   --executor-memory 4G \
   --executor-cores 2 \
-  target/scala-2.12/data-pipeline_2.12-1.0.jar
+  target/scala-2.12/scala-spark-distributed-data-pipeline_2.12-1.0.0.jar \
+  s3a://bucket/input/ \
+  s3a://bucket/output/
+```
+
+### 🧪 Testes
+
+O projeto inclui uma suíte completa de testes unitários e de integração.
+
+#### Executar Testes
+
+```bash
+# Executar todos os testes
+sbt test
+
+# Executar teste específico
+sbt "testOnly pipeline.DataPipelineTest"
+
+# Executar testes com cobertura
+sbt coverage test coverageReport
+
+# Ver relatório de cobertura
+open target/scala-2.12/scoverage-report/index.html
+```
+
+#### Estrutura de Testes
+
+- **SparkTest**: Classe base que configura SparkSession para testes
+- **DataPipelineTest**: 17+ testes cobrindo todas as funções do pipeline
+  - Testes de extração (CSV, Parquet, JSON)
+  - Testes de transformação (limpeza, agregação, filtros)
+  - Testes de carga (diferentes formatos e modos)
+  - Teste de integração end-to-end
+
+#### Formatação de Código
+
+```bash
+# Verificar formatação
+sbt scalafmtCheckAll
+
+# Formatar código automaticamente
+sbt scalafmtAll
 ```
 
 ### 📈 Otimizações de Performance
@@ -189,32 +253,22 @@ spark.read.parquet("output")
   .filter($"year" === 2025 && $"month" === 10)  // Lê apenas partições relevantes
 ```
 
-### 🧪 Testes
+### 🧪 Testes (Tests)
+
+Este projeto possui uma suíte completa de testes automatizados. Veja a seção de testes acima para mais detalhes.
+
+Exemplo de teste:
 
 ```scala
-import org.scalatest.funsuite.AnyFunSuite
-import org.apache.spark.sql.SparkSession
+test("transformData should remove duplicates") {
+  val testData = Seq(
+    ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
+    ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2)
+  ).toDF("Order ID", "Order Date", "Category", "Customer ID", "Sales", "Profit", "Quantity")
 
-class DataPipelineTest extends AnyFunSuite {
+  val result = DataPipeline.transformData(testData)
   
-  test("transformData should aggregate correctly") {
-    val spark = SparkSession.builder()
-      .master("local[*]")
-      .getOrCreate()
-    
-    import spark.implicits._
-    
-    val input = Seq(
-      ("2025-01-01", "A", 100.0),
-      ("2025-01-01", "A", 200.0),
-      ("2025-01-02", "B", 150.0)
-    ).toDF("date", "category", "amount")
-    
-    val result = DataPipeline.transformData(input)
-    
-    assert(result.count() == 2)
-    assert(result.filter($"category" === "A").select("total_amount").first().getDouble(0) == 300.0)
-  }
+  result.count() should be(1)
 }
 ```
 
@@ -234,11 +288,82 @@ println(s"Processed ${metrics.getLong(0)} records")
 println(s"Total amount: ${metrics.getDouble(1)}")
 ```
 
+### 🔧 Troubleshooting (Solução de Problemas)
+
+#### Erro: "OutOfMemoryError"
+
+```bash
+# Aumentar memória do executor
+spark-submit \
+  --executor-memory 8G \
+  --driver-memory 4G \
+  --conf spark.memory.fraction=0.8 \
+  ...
+```
+
+#### Erro: "Unable to load native-hadoop library"
+
+```bash
+# Adicionar dependências Hadoop no classpath
+export HADOOP_HOME=/path/to/hadoop
+export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native:$LD_LIBRARY_PATH
+```
+
+#### Performance lenta em agregações
+
+```scala
+// Aumentar partições antes de agregar
+df.repartition(200, $"partition_key")
+  .groupBy("key")
+  .agg(...)
+
+// Ou usar coalesce após agregar
+result.coalesce(10).write.parquet("output")
+```
+
+#### Problema com tipos de dados
+
+```scala
+// Definir schema explicitamente
+val schema = StructType(Seq(
+  StructField("id", LongType, nullable = false),
+  StructField("name", StringType, nullable = true),
+  StructField("amount", DoubleType, nullable = false)
+))
+
+spark.read.schema(schema).csv("data.csv")
+```
+
+#### Testes falhando
+
+```bash
+# Limpar cache e executar novamente
+sbt clean test
+
+# Executar com mais memória
+export SBT_OPTS="-Xmx4G -XX:MaxMetaspaceSize=512M"
+sbt test
+```
+
 ### 🔗 Recursos
 
 - [Spark Scala API](https://spark.apache.org/docs/latest/api/scala/)
 - [Scala Documentation](https://docs.scala-lang.org/)
 - [High Performance Spark (Book)](https://www.oreilly.com/library/view/high-performance-spark/9781491943199/)
+
+### 🤝 Como Contribuir
+
+Contribuições são bem-vindas! Por favor, leia nosso [Guia de Contribuição](CONTRIBUTING.md) antes de enviar pull requests.
+
+1. Faça um fork do repositório
+2. Crie sua feature branch (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'feat: Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
+
+### 📄 Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ---
 
@@ -249,11 +374,52 @@ Enterprise-grade ETL pipeline built with **Scala** and **Apache Spark** for dist
 ### 🚀 Quick Start
 
 ```bash
-sbt clean compile package
-spark-submit --class pipeline.DataPipeline --master local[*] target/scala-2.12/data-pipeline_2.12-1.0.jar
+# Clone and build
+git clone https://github.com/galafis/scala-spark-distributed-data-pipeline.git
+cd scala-spark-distributed-data-pipeline
+sbt clean compile test
+
+# Run with sample data
+sbt "run input_data.csv output_results/"
+
+# Create assembly JAR
+sbt assembly
+
+# Run with Spark
+spark-submit \
+  --class pipeline.DataPipeline \
+  --master local[*] \
+  target/scala-2.12/scala-spark-distributed-data-pipeline_2.12-1.0.0.jar \
+  input_data.csv \
+  output_results/
 ```
+
+### 🧪 Testing
+
+```bash
+# Run all tests
+sbt test
+
+# Run with coverage
+sbt coverage test coverageReport
+```
+
+### 🤝 Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 **Author:** Gabriel Demetrios Lafis  
-**License:** MIT
+**Repository:** [github.com/galafis/scala-spark-distributed-data-pipeline](https://github.com/galafis/scala-spark-distributed-data-pipeline)  
+**Status:** [![Scala CI](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml)
