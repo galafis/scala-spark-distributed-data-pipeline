@@ -8,7 +8,6 @@ package pipeline
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
 
 object DataPipeline {
   
@@ -69,7 +68,7 @@ object DataPipeline {
           .otherwise(0))
       
       // Filter invalid records
-      .filter(col("Sales") >= 0 && col("Quantity") > 0)
+      .filter(col("Sales") >= 0 and col("Quantity") > 0)
   }
   
   /**

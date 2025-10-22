@@ -1,0 +1,49 @@
+# Scala / SBT
+*.class
+*.log
+*.jar
+*.war
+*.ear
+target/
+project/target/
+project/project/
+.bsp/
+
+# IDE
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.metals/
+.bloop/
+.scala-build/
+
+# Mac
+.DS_Store
+
+# Test
+test-output/
+test-data/
+*.tmp
+
+# Spark
+derby.log
+metastore_db/
+spark-warehouse/
+checkpoint/
+
+# Assembly
+assembly/
+
+# Temporary files
+tmp/
+temp/
+*.swp
+*.swo
+*~
+
+# Coverage
+coverage/
+scoverage-data/
