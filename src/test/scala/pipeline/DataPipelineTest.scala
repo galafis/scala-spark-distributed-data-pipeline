@@ -17,7 +17,7 @@ class DataPipelineTest extends SparkTest {
 
   test("extractData should read CSV data correctly") {
     import spark.implicits._
-    
+
     // Create test CSV file
     val testData = Seq(
       ("Order1", "2025-01-15", "Electronics", "Customer1", 100.0, 50.0, 2),
@@ -36,7 +36,7 @@ class DataPipelineTest extends SparkTest {
 
   test("extractData should read Parquet data correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", "Electronics", 100.0),
       ("Order2", "Books", 200.0)
@@ -53,7 +53,7 @@ class DataPipelineTest extends SparkTest {
 
   test("extractData should read JSON data correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       """{"id": "Order1", "category": "Electronics", "sales": 100.0}""",
       """{"id": "Order2", "category": "Books", "sales": 200.0}"""
@@ -76,7 +76,7 @@ class DataPipelineTest extends SparkTest {
 
   test("transformData should remove duplicates") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
@@ -89,15 +89,17 @@ class DataPipelineTest extends SparkTest {
   }
 
   test("transformData should handle null values correctly") {
-    val schema = StructType(Seq(
-      StructField("Order ID", StringType, nullable = true),
-      StructField("Order Date", DateType, nullable = true),
-      StructField("Category", StringType, nullable = true),
-      StructField("Customer ID", StringType, nullable = true),
-      StructField("Sales", DoubleType, nullable = true),
-      StructField("Profit", DoubleType, nullable = true),
-      StructField("Quantity", IntegerType, nullable = true)
-    ))
+    val schema = StructType(
+      Seq(
+        StructField("Order ID", StringType, nullable = true),
+        StructField("Order Date", DateType, nullable = true),
+        StructField("Category", StringType, nullable = true),
+        StructField("Customer ID", StringType, nullable = true),
+        StructField("Sales", DoubleType, nullable = true),
+        StructField("Profit", DoubleType, nullable = true),
+        StructField("Quantity", IntegerType, nullable = true)
+      )
+    )
 
     val testDataRows = Seq(
       Row("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", null, null, null),
@@ -105,7 +107,7 @@ class DataPipelineTest extends SparkTest {
     )
 
     val testData = spark.createDataFrame(spark.sparkContext.parallelize(testDataRows), schema)
-    val result = DataPipeline.transformData(testData)
+    val result   = DataPipeline.transformData(testData)
 
     val firstRow = result.filter(col("Order ID") === "Order1").first()
     firstRow.getAs[Double]("Sales") should be(0.0)
@@ -115,7 +117,7 @@ class DataPipelineTest extends SparkTest {
 
   test("transformData should add derived columns correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
       ("Order2", Date.valueOf("2025-06-16"), "Books", "Customer2", 200.0, 80.0, 3)
@@ -137,7 +139,7 @@ class DataPipelineTest extends SparkTest {
 
   test("transformData should calculate profit margin correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 25.0, 1),
       ("Order2", Date.valueOf("2025-01-16"), "Books", "Customer2", 0.0, 0.0, 1),
@@ -147,7 +149,7 @@ class DataPipelineTest extends SparkTest {
     val result = DataPipeline.transformData(testData)
 
     val margins = result.select("Order ID", "Profit Margin").collect()
-    
+
     val order1Margin = margins.find(_.getString(0) == "Order1").get.getDouble(1)
     order1Margin should be(0.25 +- 0.001)
 
@@ -160,7 +162,7 @@ class DataPipelineTest extends SparkTest {
 
   test("transformData should filter out invalid records") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
       ("Order2", Date.valueOf("2025-01-16"), "Books", "Customer2", -100.0, 50.0, 2),
@@ -176,7 +178,7 @@ class DataPipelineTest extends SparkTest {
 
   test("aggregateData should group and aggregate correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
       ("Order2", Date.valueOf("2025-01-16"), "Electronics", "Customer2", 200.0, 80.0, 3),
@@ -185,9 +187,9 @@ class DataPipelineTest extends SparkTest {
     ).toDF("Order ID", "Order Date", "Category", "Customer ID", "Sales", "Profit", "Quantity")
 
     val transformed = DataPipeline.transformData(testData)
-    val result = DataPipeline.aggregateData(transformed)
+    val result      = DataPipeline.aggregateData(transformed)
 
-    result.count() should be(2)  // Electronics Q1 and Books Q2
+    result.count() should be(2) // Electronics Q1 and Books Q2
 
     val electronicsQ1 = result.filter(col("Category") === "Electronics" && col("Quarter") === 1).first()
     electronicsQ1.getAs[Double]("Total Sales") should be(600.0)
@@ -199,27 +201,36 @@ class DataPipelineTest extends SparkTest {
 
   test("aggregateData should calculate average profit margin correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 20.0, 1),
       ("Order2", Date.valueOf("2025-01-16"), "Electronics", "Customer2", 100.0, 30.0, 1)
     ).toDF("Order ID", "Order Date", "Category", "Customer ID", "Sales", "Profit", "Quantity")
 
     val transformed = DataPipeline.transformData(testData)
-    val result = DataPipeline.aggregateData(transformed)
+    val result      = DataPipeline.aggregateData(transformed)
 
     val avgMargin = result.first().getAs[Double]("Avg Profit Margin")
-    avgMargin should be(0.25 +- 0.001)  // (0.2 + 0.3) / 2
+    avgMargin should be(0.25 +- 0.001) // (0.2 + 0.3) / 2
   }
 
   test("loadData should write Parquet data correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Category1", 2025, 1, 1000.0, 500.0, 10L, 0.5, 5L, 3L),
       ("Category2", 2025, 2, 2000.0, 800.0, 20L, 0.4, 8L, 5L)
-    ).toDF("Category", "Year", "Quarter", "Total Sales", "Total Profit", "Total Quantity",
-           "Avg Profit Margin", "Order Count", "Unique Customers")
+    ).toDF(
+      "Category",
+      "Year",
+      "Quarter",
+      "Total Sales",
+      "Total Profit",
+      "Total Quantity",
+      "Avg Profit Margin",
+      "Order Count",
+      "Unique Customers"
+    )
 
     val tempPath = "target/test-data/parquet-output"
     DataPipeline.loadData(testData, tempPath, "parquet", "overwrite")
@@ -231,7 +242,7 @@ class DataPipelineTest extends SparkTest {
 
   test("loadData should write CSV data correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Category1", 2025, 1, 1000.0),
       ("Category2", 2025, 2, 2000.0)
@@ -246,7 +257,7 @@ class DataPipelineTest extends SparkTest {
 
   test("loadData should write JSON data correctly") {
     import spark.implicits._
-    
+
     val testData = Seq(
       ("Category1", 2025, 1000.0),
       ("Category2", 2025, 2000.0)
@@ -261,7 +272,7 @@ class DataPipelineTest extends SparkTest {
 
   test("loadData should throw exception for unsupported format") {
     import spark.implicits._
-    
+
     val testData = Seq(("Category1", 1000.0)).toDF("Category", "Sales")
 
     assertThrows[IllegalArgumentException] {
@@ -271,9 +282,9 @@ class DataPipelineTest extends SparkTest {
 
   test("loadData should support append mode") {
     import spark.implicits._
-    
+
     val tempPath = "target/test-data/append-test"
-    
+
     val testData1 = Seq(("Category1", 1000.0)).toDF("Category", "Sales")
     DataPipeline.loadData(testData1, tempPath, "parquet", "overwrite")
 
@@ -286,7 +297,7 @@ class DataPipelineTest extends SparkTest {
 
   test("Full ETL pipeline integration test") {
     import spark.implicits._
-    
+
     // Create input data
     val inputData = Seq(
       ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
@@ -294,10 +305,10 @@ class DataPipelineTest extends SparkTest {
       ("Order2", Date.valueOf("2025-01-16"), "Electronics", "Customer2", 200.0, 80.0, 3),
       ("Order3", Date.valueOf("2025-04-15"), "Books", "Customer3", 150.0, 60.0, 1),
       ("Order4", Date.valueOf("2025-01-17"), "Electronics", "Customer4", -50.0, 20.0, 2), // invalid sales
-      ("Order5", Date.valueOf("2025-04-20"), "Books", "Customer5", 300.0, 120.0, 0) // invalid quantity
+      ("Order5", Date.valueOf("2025-04-20"), "Books", "Customer5", 300.0, 120.0, 0)       // invalid quantity
     ).toDF("Order ID", "Order Date", "Category", "Customer ID", "Sales", "Profit", "Quantity")
 
-    val inputPath = "target/test-data/integration-input"
+    val inputPath  = "target/test-data/integration-input"
     val outputPath = "target/test-data/integration-output"
 
     inputData.write.mode("overwrite").option("header", "true").csv(inputPath)
@@ -325,4 +336,5 @@ class DataPipelineTest extends SparkTest {
     electronicsData.getAs[Double]("Total Sales") should be(300.0)
     electronicsData.getAs[Long]("Order Count") should be(2)
   }
+
 }
