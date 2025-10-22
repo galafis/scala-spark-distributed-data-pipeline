@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
  */
 trait SparkTest extends AnyFunSuite with BeforeAndAfterAll with Matchers {
 
-  protected lazy val spark: SparkSession = {
+  protected lazy val spark: SparkSession =
     SparkSession
       .builder()
       .appName("Test Spark Session")
@@ -19,7 +19,6 @@ trait SparkTest extends AnyFunSuite with BeforeAndAfterAll with Matchers {
       .config("spark.sql.shuffle.partitions", "2")
       .config("spark.sql.warehouse.dir", "target/spark-warehouse")
       .getOrCreate()
-  }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -32,4 +31,5 @@ trait SparkTest extends AnyFunSuite with BeforeAndAfterAll with Matchers {
     }
     super.afterAll()
   }
+
 }
