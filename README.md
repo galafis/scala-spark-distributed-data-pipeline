@@ -1,6 +1,5 @@
 # Scala Spark Distributed Data Pipeline
 
-[![Scala CI](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Scala](https://img.shields.io/badge/Scala-DC322F?style=for-the-badge&logo=scala&logoColor=white) ![Apache Spark](https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apache-spark&logoColor=white) ![Big Data](https://img.shields.io/badge/Big_Data-FF6F00?style=for-the-badge)
 
@@ -439,5 +438,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Author:** Gabriel Demetrios Lafis  
-**Repository:** [github.com/galafis/scala-spark-distributed-data-pipeline](https://github.com/galafis/scala-spark-distributed-data-pipeline)  
-**Status:** [![Scala CI](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/galafis/scala-spark-distributed-data-pipeline/actions/workflows/ci.yml)
+**Repository:** [github.com/galafis/scala-spark-distributed-data-pipeline](https://github.com/galafis/scala-spark-distributed-data-pipeline)
