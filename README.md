@@ -7,11 +7,11 @@
 
 ## 🇧🇷 Pipeline de Dados Distribuído com Scala e Spark
 
-Pipeline ETL de **nível empresarial** construído com **Scala** e **Apache Spark** para processamento distribuído de grandes volumes de dados. Demonstra padrões modernos de engenharia de dados, incluindo processamento em batch, otimizações de performance e integração com data lakes.
+Pipeline ETL construído com **Scala** e **Apache Spark** para processamento distribuído de dados. Demonstra padrões comuns de engenharia de dados, incluindo processamento em batch, otimizações de performance e integração com data lakes.
 
 ### 🎯 Objetivo
 
-Fornecer uma arquitetura completa e escalável para pipelines de dados que processam **terabytes de dados** com alta performance, demonstrando as melhores práticas de Spark em produção.
+Fornecer uma implementação de referência para pipelines ETL com Spark, demonstrando boas práticas de organização de código, testes e configuração.
 
 ### 🌟 Por que Scala + Spark?
 
@@ -25,10 +25,10 @@ Fornecer uma arquitetura completa e escalável para pipelines de dados que proce
 
 ### 📊 Casos de Uso
 
-1. **E-commerce**: Processar 100M+ eventos de clickstream diariamente
-2. **Fintech**: Agregação de transações para detecção de fraude
-3. **Telecom**: Análise de CDRs (Call Detail Records) em escala
-4. **IoT**: Processamento de telemetria de milhões de dispositivos
+1. **E-commerce**: Processar eventos de clickstream
+2. **Fintech**: Agregação de transações
+3. **Telecom**: Análise de CDRs (Call Detail Records)
+4. **IoT**: Processamento de telemetria de dispositivos
 5. **Marketing**: ETL de dados de múltiplas fontes para data warehouse
 
 ### 🏗️ Arquitetura
@@ -58,64 +58,23 @@ Fornecer uma arquitetura completa e escalável para pipelines de dados que proce
 
 ### 💻 Código Principal
 
+O pipeline segue o padrão Extract-Transform-Load com suporte a CSV, Parquet e JSON:
+
 ```scala
-package pipeline
+// Extract: leitura de dados com detecção automática de formato
+val rawData = DataPipeline.extractData(spark, inputPath, "csv")
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
+// Transform: limpeza, deduplicação e colunas derivadas
+val transformedData = DataPipeline.transformData(rawData)
 
-object DataPipeline {
-  
-  def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder()
-      .appName("Distributed Data Pipeline")
-      .config("spark.sql.adaptive.enabled", "true")
-      .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
-      .getOrCreate()
-    
-    import spark.implicits._
-    
-    // Extract
-    val rawData = extractData(spark, "s3a://bucket/raw-data/")
-    
-    // Transform
-    val transformedData = transformData(rawData)
-    
-    // Load
-    loadData(transformedData, "s3a://bucket/processed-data/")
-    
-    spark.stop()
-  }
-  
-  def extractData(spark: SparkSession, path: String): DataFrame = {
-    spark.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .parquet(path)
-  }
-  
-  def transformData(df: DataFrame): DataFrame = {
-    df.filter($"amount" > 0)
-      .withColumn("year", year($"date"))
-      .withColumn("month", month($"date"))
-      .groupBy("year", "month", "category")
-      .agg(
-        sum("amount").as("total_amount"),
-        count("*").as("transaction_count"),
-        avg("amount").as("avg_amount")
-      )
-      .orderBy("year", "month")
-  }
-  
-  def loadData(df: DataFrame, path: String): Unit = {
-    df.write
-      .mode("overwrite")
-      .partitionBy("year", "month")
-      .parquet(path)
-  }
-}
+// Aggregate: agrupamento por categoria, ano e trimestre
+val aggregatedData = DataPipeline.aggregateData(transformedData)
+
+// Load: escrita em Parquet, CSV ou JSON
+DataPipeline.loadData(aggregatedData, outputPath, "parquet")
 ```
+
+Veja o código completo em [`src/main/scala/pipeline/DataPipeline.scala`](src/main/scala/pipeline/DataPipeline.scala).
 
 ### 🚀 Instalação e Execução
 
@@ -253,25 +212,6 @@ spark.read.parquet("output")
   .filter($"year" === 2025 && $"month" === 10)  // Lê apenas partições relevantes
 ```
 
-### 🧪 Testes (Tests)
-
-Este projeto possui uma suíte completa de testes automatizados. Veja a seção de testes acima para mais detalhes.
-
-Exemplo de teste:
-
-```scala
-test("transformData should remove duplicates") {
-  val testData = Seq(
-    ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2),
-    ("Order1", Date.valueOf("2025-01-15"), "Electronics", "Customer1", 100.0, 50.0, 2)
-  ).toDF("Order ID", "Order Date", "Category", "Customer ID", "Sales", "Profit", "Quantity")
-
-  val result = DataPipeline.transformData(testData)
-  
-  result.count() should be(1)
-}
-```
-
 ### 📊 Monitoramento
 
 ```scala
@@ -386,7 +326,7 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 🇬🇧 Scala Spark Distributed Data Pipeline
 
-Enterprise-grade ETL pipeline built with **Scala** and **Apache Spark** for distributed processing of large data volumes.
+ETL pipeline built with **Scala** and **Apache Spark** for distributed data processing.
 
 ### 🚀 Quick Start
 

@@ -278,8 +278,7 @@ Screenshots, mockups, or examples
 
 If you have questions:
 - Check the [README.md](README.md)
-- Open a GitHub Discussion
-- Contact the maintainers
+- Open a GitHub Issue
 
 ## License
 
@@ -287,4 +286,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-Thank you for contributing! 🎉
+Thank you for contributing!
