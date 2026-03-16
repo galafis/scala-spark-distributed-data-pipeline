@@ -2,9 +2,10 @@
 
 > Distributed data pipeline built with Scala and Apache Spark. Processes large-scale datasets with ETL workflows, data validation, and fault-tolerant batch/stream processing.
 
-[![Scala](https://img.shields.io/badge/Scala-3.3-DC322F.svg)](https://img.shields.io/badge/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker)](Dockerfile)
+![Scala](https://img.shields.io/badge/Scala-DC322F?style=for-the-badge&logo=scala&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![License-MIT](https://img.shields.io/badge/License--MIT-yellow?style=for-the-badge)
+
 
 [English](#english) | [Português](#português)
 
